@@ -1,0 +1,33 @@
+# Files
+*
+*.*
+
+!.gitignore
+!*.md
+
+!Makefile
+!*.mk
+
+!*.yaml
+!*.yml
+
+!*.[ly]
+!*.[ch]
+!*.cc
+
+!*.sy
+
+
+# Directory
+!*/
+
+build/
+output/
+tmp-src/
+store/
+
+
+# Invisible directory
+.*/
+
+!.github/
