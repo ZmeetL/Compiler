@@ -13,14 +13,14 @@
 #define extra yyget_extra(yyscanner)
 #define p_ast (extra->p_ast)
 
-#define new_sym(name) hir_symbol_item_add(p_ast, name)
-#define find_sym(name) hir_symbol_item_find(p_ast, name)
-#define find_str(str) hir_symbol_str_get(p_ast, str)
+#define new_sym(name) ast_symbol_item_add(p_ast, name)
+#define find_sym(name) ast_symbol_item_find(p_ast, name)
+#define find_str(str) ast_symbol_str_get(p_ast, str)
 %}
 
 %initial-action
 {
-       p_ast = hir_program_gen();
+       p_ast = ast_program_gen();
 }
 
 %code requires{
@@ -30,14 +30,14 @@
 %define api.pure full
 
 %union {
-       p_hir_block p_block;
-       p_hir_stmt p_stmt;
-       p_hir_exp p_exp;
+       p_ast_block p_block;
+       p_ast_stmt p_stmt;
+       p_ast_exp p_exp;
 
-       p_hir_program p_program;
-       p_hir_func p_func;
+       p_ast_program p_program;
+       p_ast_func p_func;
 
-       p_hir_param_list p_param_list;
+       p_ast_param_list p_param_list;
 
        p_syntax_decl p_decl;
        p_syntax_decl_list p_decl_list;
@@ -135,7 +135,7 @@ begin : PUSHZONE CompUnit POPZONE
       ;
 
 CompUnit : CompUnit Declaration     { syntax_global_vardecl(p_ast, $2); }
-         | CompUnit FuncDeclaration { $$ = hir_program_func_add(p_ast, $2); }
+         | CompUnit FuncDeclaration { $$ = ast_program_func_add(p_ast, $2); }
          | CompUnitInit
          | CompUnit error
          ;
@@ -218,23 +218,23 @@ ArraryParameter : ID '[' ']'                  { $$ = syntax_decl_arr(syntax_decl
 Cond : LOrExp
      ;
 
-LOrExp : LOrExp OR LAndExp { $$ = hir_exp_lexec_gen(hir_exp_op_bool_or, $1, $3); }
+LOrExp : LOrExp OR LAndExp { $$ = ast_exp_lexec_gen(ast_exp_op_bool_or, $1, $3); }
        | LAndExp
        ;
 
-LAndExp : LAndExp AND EqExp { $$ = hir_exp_lexec_gen(hir_exp_op_bool_and, $1, $3); }
+LAndExp : LAndExp AND EqExp { $$ = ast_exp_lexec_gen(ast_exp_op_bool_and, $1, $3); }
         | EqExp
         ;
 
-EqExp : EqExp EQ RelExp  { $$ = hir_exp_lexec_gen(hir_exp_op_eq, $1, $3); }
-      | EqExp NEQ RelExp { $$ = hir_exp_lexec_gen(hir_exp_op_neq, $1, $3); }
+EqExp : EqExp EQ RelExp  { $$ = ast_exp_lexec_gen(ast_exp_op_eq, $1, $3); }
+      | EqExp NEQ RelExp { $$ = ast_exp_lexec_gen(ast_exp_op_neq, $1, $3); }
       | RelExp
       ;
 
-RelExp : RelExp '<' AddExp { $$ = hir_exp_lexec_gen(hir_exp_op_l, $1, $3); }
-       | RelExp '>' AddExp { $$ = hir_exp_lexec_gen(hir_exp_op_g, $1, $3); }
-       | RelExp LE AddExp  { $$ = hir_exp_lexec_gen(hir_exp_op_leq, $1, $3); }
-       | RelExp GE AddExp  { $$ = hir_exp_lexec_gen(hir_exp_op_geq, $1, $3); }
+RelExp : RelExp '<' AddExp { $$ = ast_exp_lexec_gen(ast_exp_op_l, $1, $3); }
+       | RelExp '>' AddExp { $$ = ast_exp_lexec_gen(ast_exp_op_g, $1, $3); }
+       | RelExp LE AddExp  { $$ = ast_exp_lexec_gen(ast_exp_op_leq, $1, $3); }
+       | RelExp GE AddExp  { $$ = ast_exp_lexec_gen(ast_exp_op_geq, $1, $3); }
        | AddExp
        ;
 
@@ -244,77 +244,77 @@ ConstExp : Exp { $$ = syntax_const_check($1); }
 Exp : AddExp
     ;
 
-AddExp : AddExp '+' MulExp { $$ = hir_exp_exec_gen(hir_exp_op_add, $1, $3); }
-       | AddExp '-' MulExp { $$ = hir_exp_exec_gen(hir_exp_op_sub, $1, $3); }
+AddExp : AddExp '+' MulExp { $$ = ast_exp_exec_gen(ast_exp_op_add, $1, $3); }
+       | AddExp '-' MulExp { $$ = ast_exp_exec_gen(ast_exp_op_sub, $1, $3); }
        | MulExp
        ;
 
-MulExp : MulExp '*' UnaryExp { $$ = hir_exp_exec_gen(hir_exp_op_mul, $1, $3); }
-       | MulExp '/' UnaryExp { $$ = hir_exp_exec_gen(hir_exp_op_div, $1, $3); }
-       | MulExp '%' UnaryExp { $$ = hir_exp_exec_gen(hir_exp_op_mod, $1, $3); }
+MulExp : MulExp '*' UnaryExp { $$ = ast_exp_exec_gen(ast_exp_op_mul, $1, $3); }
+       | MulExp '/' UnaryExp { $$ = ast_exp_exec_gen(ast_exp_op_div, $1, $3); }
+       | MulExp '%' UnaryExp { $$ = ast_exp_exec_gen(ast_exp_op_mod, $1, $3); }
        | UnaryExp
        ;
 
-UnaryExp : '-' UnaryExp     { $$ = hir_exp_uexec_gen(hir_exp_op_minus, $2); }
+UnaryExp : '-' UnaryExp     { $$ = ast_exp_uexec_gen(ast_exp_op_minus, $2); }
          | '+' UnaryExp     { $$ = $2; }
-         | '!' UnaryExp     { $$ = hir_exp_uexec_gen(hir_exp_op_bool_not, $2); }
+         | '!' UnaryExp     { $$ = ast_exp_uexec_gen(ast_exp_op_bool_not, $2); }
          | PrimaryExp
          ;
 
 PrimaryExp : '(' Exp ')' { $$ = $2; }
-           | INTCONST    { $$ = hir_exp_int_gen($1); }
-           | FLOATCONST  { $$ = hir_exp_float_gen($1); }
+           | INTCONST    { $$ = ast_exp_int_gen($1); }
+           | FLOATCONST  { $$ = ast_exp_float_gen($1); }
            | Val         { $$ = $1; }
            | Call        { $$ = $1; }
            | Str         { $$ = $1; }
            ;
 
-Call : ID '(' FuncRParams ')' { $$ = hir_exp_call_gen(find_sym($1), $3); free($1); }
+Call : ID '(' FuncRParams ')' { $$ = ast_exp_call_gen(find_sym($1), $3); free($1); }
      ;
 
-Val : ID                 { $$ = hir_exp_val_gen(find_sym($1)->p_info); free($1); }
-    | Val '[' Exp ']'    { $$ = hir_exp_val_offset($1, $3); }
+Val : ID                 { $$ = ast_exp_val_gen(find_sym($1)->p_info); free($1); }
+    | Val '[' Exp ']'    { $$ = ast_exp_val_offset($1, $3); }
     ;
 
-Str : STRING { $$ = hir_exp_str_gen(find_str($1)); free($1); }
+Str : STRING { $$ = ast_exp_str_gen(find_str($1)); free($1); }
     ;
 
 FuncRParams : FuncRParamList { $$ = $1; }
-            | /* *empty */   { $$ = hir_param_list_init(); }
+            | /* *empty */   { $$ = ast_param_list_init(); }
             ;
 
-FuncRParamList : FuncRParamList ',' Exp { $$ = hir_param_list_add($1, $3); }
-               | Exp                    { $$ = hir_param_list_add(hir_param_list_init(), $1); }
+FuncRParamList : FuncRParamList ',' Exp { $$ = ast_param_list_add($1, $3); }
+               | Exp                    { $$ = ast_param_list_add(ast_param_list_init(), $1); }
                ;
 
 Block : '{' BlockItems '}' { $$ = $2; }
       ;
 
 BlockItems : BlockItems Declaration { $$ = syntax_local_vardecl(p_ast, $1, $2); }
-           | BlockItems Stmt           { $$ = hir_block_add($1, $2); }
-           | /* *empty */              { $$ = hir_block_gen(); }
+           | BlockItems Stmt           { $$ = ast_block_add($1, $2); }
+           | /* *empty */              { $$ = ast_block_gen(); }
            ;
 
 StmtExp : /* *empty */ { $$ = NULL; }
         | Exp
         ;
 
-Stmt : PUSHZONE Block POPZONE             { $$ = hir_stmt_block_gen($2); }
-     | Val '=' Exp ';'                    { $$ = hir_stmt_exp_gen(hir_exp_assign_gen($1, $3)); }
-     | StmtExp ';'                        { $$ = hir_stmt_exp_gen($1); }
-     | RETURN StmtExp ';'                 { $$ = hir_stmt_return_gen($2); }
-     | BREAK ';'                          { $$ = hir_stmt_break_gen(); }
-     | CONTINUE ';'                       { $$ = hir_stmt_continue_gen(); }
-     | IF '(' Cond ')' Stmt ELSE Stmt     { $$ = hir_stmt_if_else_gen($3, $5, $7); }
-     | IF '(' Cond ')' Stmt %prec NO_ELSE { $$ = hir_stmt_if_gen($3, $5); }
-     | WHILE '(' Cond ')' Stmt            { $$ = hir_stmt_while_gen($3, $5); }
-     | error                              { $$ = hir_stmt_exp_gen(NULL); }
+Stmt : PUSHZONE Block POPZONE             { $$ = ast_stmt_block_gen($2); }
+     | Val '=' Exp ';'                    { $$ = ast_stmt_exp_gen(ast_exp_assign_gen($1, $3)); }
+     | StmtExp ';'                        { $$ = ast_stmt_exp_gen($1); }
+     | RETURN StmtExp ';'                 { $$ = ast_stmt_return_gen($2); }
+     | BREAK ';'                          { $$ = ast_stmt_break_gen(); }
+     | CONTINUE ';'                       { $$ = ast_stmt_continue_gen(); }
+     | IF '(' Cond ')' Stmt ELSE Stmt     { $$ = ast_stmt_if_else_gen($3, $5, $7); }
+     | IF '(' Cond ')' Stmt %prec NO_ELSE { $$ = ast_stmt_if_gen($3, $5); }
+     | WHILE '(' Cond ')' Stmt            { $$ = ast_stmt_while_gen($3, $5); }
+     | error                              { $$ = ast_stmt_exp_gen(NULL); }
      ;
 
-PUSHZONE : /* *empty */ { hir_symbol_zone_push(p_ast); }
+PUSHZONE : /* *empty */ { ast_symbol_zone_push(p_ast); }
          ;
 
-POPZONE : /* *empty */ { hir_symbol_zone_pop(p_ast); }
+POPZONE : /* *empty */ { ast_symbol_zone_pop(p_ast); }
         ;
 
 CompUnitInit : /* *empty */ {
