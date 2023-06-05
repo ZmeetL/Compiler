@@ -20,10 +20,10 @@ p_syntax_init syntax_init_list_add(p_syntax_init p_list, p_syntax_init p_init) {
     assert(list_add_prev(&p_init->node, &p_list->list));
     return p_list;
 }
-p_syntax_init syntax_init_exp_gen(p_hir_exp p_exp) {
+p_syntax_init syntax_init_exp_gen(p_ast_exp p_exp) {
     p_syntax_init p_init = malloc(sizeof(*p_init));
     *p_init = (syntax_init) {
-        .syntax_const = (p_exp->kind == hir_exp_num),
+        .syntax_const = (p_exp->kind == ast_exp_num),
         .is_exp = true,
         .p_exp = p_exp,
         .node = list_head_init(&p_init->node),
@@ -43,7 +43,8 @@ void syntax_decl_type_add(p_syntax_decl p_decl, p_symbol_type p_tail) {
             }
         }
     }
-    else p_decl->p_type = p_tail;
+    else
+        p_decl->p_type = p_tail;
     p_decl->p_tail = p_tail;
 }
 p_syntax_decl syntax_decl_gen(char *name) {
@@ -57,7 +58,7 @@ p_syntax_decl syntax_decl_gen(char *name) {
     };
     return p_decl;
 }
-p_syntax_decl syntax_decl_arr(p_syntax_decl p_decl, p_hir_exp p_exp) {
+p_syntax_decl syntax_decl_arr(p_syntax_decl p_decl, p_ast_exp p_exp) {
     size_t size = 0;
     if (p_exp) { // TODO
         assert(p_exp->basic == type_int);
@@ -122,7 +123,7 @@ p_syntax_param_list syntax_param_list_add(p_syntax_param_list p_list, p_syntax_p
     return p_list;
 }
 
-p_hir_func syntax_func_head(p_hir_program p_program, basic_type type, char *name, p_syntax_param_list p_param_list) {
+p_ast_func syntax_func_head(p_ast_program p_program, basic_type type, char *name, p_syntax_param_list p_param_list) {
     p_symbol_type p_type = symbol_type_func_gen(false);
     p_type->basic = type;
 
@@ -135,25 +136,25 @@ p_hir_func syntax_func_head(p_hir_program p_program, basic_type type, char *name
         p_param = p_param->p_params;
     }
 
-    p_symbol_item p_func_item = hir_symbol_item_add(p_program, symbol_func_gen(name, p_type), true);
-    p_hir_func p_func = hir_func_gen(p_func_item, NULL);
+    p_symbol_item p_func_item = ast_symbol_item_add(p_program, symbol_func_gen(name, p_type), true);
+    p_ast_func p_func = ast_func_gen(p_func_item, NULL);
     free(name);
 
-    hir_symbol_zone_push(p_program);
+    ast_symbol_zone_push(p_program);
     while (!list_head_alone(&p_param_list->param_decl)) {
         p_syntax_param_decl p_decl = list_entry(p_param_list->param_decl.p_next, syntax_param_decl, node);
         list_del(&p_decl->node);
 
         p_symbol_sym p_sym = symbol_var_gen(p_decl->name, p_decl->p_type, false, false, NULL);
-        hir_symbol_item_add(p_program, p_sym, false);
+        ast_symbol_item_add(p_program, p_sym, false);
         free(p_decl->name);
         free(p_decl);
     }
     free(p_param_list);
     return p_func;
 }
-p_hir_func syntax_func_end(p_hir_program p_program, p_hir_func p_func, p_hir_block p_block) {
-    hir_symbol_zone_pop(p_program);
+p_ast_func syntax_func_end(p_ast_program p_program, p_ast_func p_func, p_ast_block p_block) {
+    ast_symbol_zone_pop(p_program);
     p_func->p_block = p_block;
     return p_func;
 }
@@ -161,7 +162,7 @@ p_hir_func syntax_func_end(p_hir_program p_program, p_hir_func p_func, p_hir_blo
 typedef struct syntax_init_mem syntax_init_mem, *p_syntax_init_mem;
 struct syntax_init_mem {
     size_t size;
-    p_hir_exp *memory;
+    p_ast_exp *memory;
 };
 p_syntax_init_mem syntax_init_mem_gen(size_t size) {
     p_syntax_init_mem p_init = malloc(sizeof(*p_init));
@@ -172,22 +173,22 @@ p_syntax_init_mem syntax_init_mem_gen(size_t size) {
     memset(p_init->memory, 0, sizeof(**p_init->memory) * size);
     return p_init;
 }
-p_syntax_init_mem syntax_init_mem_add(p_syntax_init_mem p_init, size_t offset, p_hir_exp p_exp) {
+p_syntax_init_mem syntax_init_mem_add(p_syntax_init_mem p_init, size_t offset, p_ast_exp p_exp) {
     assert(offset < p_init->size);
     p_init->memory[offset] = p_exp;
     return p_init;
 }
 void syntax_init_mem_drop(p_syntax_init_mem p_init) {
-    if(!p_init)
+    if (!p_init)
         return;
     for (size_t i = 0; i < p_init->size; ++i) {
-        if (p_init->memory[i]) hir_exp_drop(p_init->memory[i]);
+        if (p_init->memory[i]) ast_exp_drop(p_init->memory[i]);
     }
     free(p_init->memory);
     free(p_init);
 }
 
-static inline void syntax_init_list_trans(p_symbol_type p_type, basic_type basic, p_syntax_init p_srcs, p_hir_exp *memory) {
+static inline void syntax_init_list_trans(p_symbol_type p_type, basic_type basic, p_syntax_init p_srcs, p_ast_exp *memory) {
     assert(!p_srcs->is_exp);
 
     size_t offset = 0;
@@ -197,7 +198,7 @@ static inline void syntax_init_list_trans(p_symbol_type p_type, basic_type basic
 
         if (p_init->is_exp) {
             assert(offset < p_type->size);
-            assert(basic == hir_exp_get_basic(p_init->p_exp));
+            assert(basic == ast_exp_get_basic(p_init->p_exp));
             memory[offset++] = p_init->p_exp;
         }
         else {
@@ -209,8 +210,9 @@ static inline void syntax_init_list_trans(p_symbol_type p_type, basic_type basic
         free(p_init);
     }
     for (; offset < p_type->size; ++offset) {
-        if (basic == type_int) memory[offset] = hir_exp_int_gen(0);
-        else memory[offset] = hir_exp_float_gen(0);
+        if (basic == type_int) memory[offset] = ast_exp_int_gen(0);
+        else
+            memory[offset] = ast_exp_float_gen(0);
     }
 }
 static inline p_syntax_init_mem syntax_init_trans(p_syntax_decl p_decl) {
@@ -220,7 +222,7 @@ static inline p_syntax_init_mem syntax_init_trans(p_syntax_decl p_decl) {
     p_syntax_init_mem p_init = syntax_init_mem_gen(p_decl->p_type->size);
     if (p_decl->p_init->is_exp) {
         assert(p_decl->p_type->kind == type_var);
-        assert(p_decl->p_type->basic == hir_exp_get_basic(p_decl->p_init->p_exp));
+        assert(p_decl->p_type->basic == ast_exp_get_basic(p_decl->p_init->p_exp));
         p_init->memory[0] = p_decl->p_init->p_exp;
     }
     else {
@@ -230,7 +232,7 @@ static inline p_syntax_init_mem syntax_init_trans(p_syntax_decl p_decl) {
     free(p_decl->p_init);
     return p_init;
 }
-p_hir_block syntax_local_vardecl(p_hir_program p_program, p_hir_block p_block, p_syntax_decl_list p_decl_list) {
+p_ast_block syntax_local_vardecl(p_ast_program p_program, p_ast_block p_block, p_syntax_decl_list p_decl_list) {
     while (!list_head_alone(&p_decl_list->decl)) {
         p_syntax_decl p_decl = list_entry(p_decl_list->decl.p_next, syntax_decl, node);
         list_del(&p_decl->node);
@@ -240,7 +242,7 @@ p_hir_block syntax_local_vardecl(p_hir_program p_program, p_hir_block p_block, p
         p_syntax_init_mem p_h_init = syntax_init_trans(p_decl);
         if (p_decl_list->is_const) {
             p_symbol_init p_init = symbol_init_gen(p_h_init->size, p_decl_list->type);
-            for(size_t i = 0; i < p_h_init->size; ++i) {
+            for (size_t i = 0; i < p_h_init->size; ++i) {
                 symbol_init_val init_val;
                 if (p_init->basic == type_int) {
                     init_val.i = syntax_const_check(p_h_init->memory[i])->intconst;
@@ -251,32 +253,32 @@ p_hir_block syntax_local_vardecl(p_hir_program p_program, p_hir_block p_block, p
                 symbol_init_add(p_init, i, init_val);
             }
             p_symbol_sym p_sym = symbol_var_gen(p_decl->name, p_decl->p_type, p_decl_list->is_const, p_init != NULL, p_init);
-            hir_symbol_item_add(p_program, p_sym, false);
+            ast_symbol_item_add(p_program, p_sym, false);
         }
         else {
             p_symbol_sym p_sym = symbol_var_gen(p_decl->name, p_decl->p_type, p_decl_list->is_const, false, NULL);
-            hir_symbol_item_add(p_program, p_sym, false);
+            ast_symbol_item_add(p_program, p_sym, false);
             if (p_h_init) {
                 p_symbol_type p_var_type = p_sym->p_type;
-                while(p_var_type->kind == type_arrary) {
+                while (p_var_type->kind == type_arrary) {
                     p_var_type = p_var_type->p_item;
                 }
                 if (p_sym->p_type->kind == type_var) {
-                    p_hir_exp p_lval = hir_exp_val_gen(p_sym);
-                    p_hir_exp p_rval = p_h_init->memory[0];
+                    p_ast_exp p_lval = ast_exp_val_gen(p_sym);
+                    p_ast_exp p_rval = p_h_init->memory[0];
                     p_h_init->memory[0] = NULL;
-                    p_hir_exp p_assign = hir_exp_assign_gen(p_lval, p_rval);
-                    hir_block_add(p_block, hir_stmt_exp_gen(p_assign));
+                    p_ast_exp p_assign = ast_exp_assign_gen(p_lval, p_rval);
+                    ast_block_add(p_block, ast_stmt_exp_gen(p_assign));
                 }
                 else {
                     for (size_t i = 0; i < p_h_init->size; ++i) {
-                        p_hir_exp p_lval = hir_exp_val_gen(p_sym);
+                        p_ast_exp p_lval = ast_exp_val_gen(p_sym);
                         p_lval->p_type = p_var_type;
-                        p_lval->p_offset = hir_exp_int_gen(i);
-                        p_hir_exp p_rval = p_h_init->memory[i];
+                        p_lval->p_offset = ast_exp_int_gen(i);
+                        p_ast_exp p_rval = p_h_init->memory[i];
                         p_h_init->memory[i] = NULL;
-                        p_hir_exp p_assign = hir_exp_assign_gen(p_lval, p_rval);
-                        hir_block_add(p_block, hir_stmt_exp_gen(p_assign));
+                        p_ast_exp p_assign = ast_exp_assign_gen(p_lval, p_rval);
+                        ast_block_add(p_block, ast_stmt_exp_gen(p_assign));
                     }
                 }
             }
@@ -289,7 +291,7 @@ p_hir_block syntax_local_vardecl(p_hir_program p_program, p_hir_block p_block, p
     free(p_decl_list);
     return p_block;
 }
-void syntax_global_vardecl(p_hir_program p_program, p_syntax_decl_list p_decl_list) {
+void syntax_global_vardecl(p_ast_program p_program, p_syntax_decl_list p_decl_list) {
     while (!list_head_alone(&p_decl_list->decl)) {
         p_syntax_decl p_decl = list_entry(p_decl_list->decl.p_next, syntax_decl, node);
         list_del(&p_decl->node);
@@ -299,7 +301,7 @@ void syntax_global_vardecl(p_hir_program p_program, p_syntax_decl_list p_decl_li
         p_syntax_init_mem p_h_init = syntax_init_trans(p_decl);
         p_symbol_init p_init = symbol_init_gen(p_decl->p_type->size, p_decl_list->type);
         if (p_h_init) {
-            for(size_t i = 0; i < p_init->size; ++i) {
+            for (size_t i = 0; i < p_init->size; ++i) {
                 symbol_init_val init_val;
                 if (p_init->basic == type_int) {
                     init_val.i = syntax_const_check(p_h_init->memory[i])->intconst;
@@ -311,7 +313,7 @@ void syntax_global_vardecl(p_hir_program p_program, p_syntax_decl_list p_decl_li
             }
         }
         else {
-            for(size_t i = 0; i < p_init->size; ++i) {
+            for (size_t i = 0; i < p_init->size; ++i) {
                 symbol_init_val init_val;
                 if (p_init->basic == type_int) {
                     init_val.i = 0;
@@ -324,7 +326,7 @@ void syntax_global_vardecl(p_hir_program p_program, p_syntax_decl_list p_decl_li
         }
         syntax_init_mem_drop(p_h_init);
         p_symbol_sym p_sym = symbol_var_gen(p_decl->name, p_decl->p_type, p_decl_list->is_const, p_init != NULL, p_init);
-        hir_symbol_item_add(p_program, p_sym, true);
+        ast_symbol_item_add(p_program, p_sym, true);
 
         free(p_decl->name);
         free(p_decl);
@@ -332,7 +334,7 @@ void syntax_global_vardecl(p_hir_program p_program, p_syntax_decl_list p_decl_li
     free(p_decl_list);
 }
 
-void syntax_rtlib_decl(p_hir_program p_program, basic_type type, char *name, p_symbol_type p_param1, p_symbol_type p_param2, bool is_va) {
+void syntax_rtlib_decl(p_ast_program p_program, basic_type type, char *name, p_symbol_type p_param1, p_symbol_type p_param2, bool is_va) {
     p_symbol_type p_type = symbol_type_func_gen(is_va);
     p_type->basic = type;
 
@@ -344,22 +346,22 @@ void syntax_rtlib_decl(p_hir_program p_program, basic_type type, char *name, p_s
     }
 
     p_symbol_sym p_sym = symbol_func_gen(name, p_type);
-    p_symbol_item p_item = hir_symbol_item_add(p_program, p_sym, true);
-    list_add_prev(&hir_func_gen(p_item, NULL)->node, &p_program->func);
+    p_symbol_item p_item = ast_symbol_item_add(p_program, p_sym, true);
+    list_add_prev(&ast_func_gen(p_item, NULL)->node, &p_program->func);
 
-    hir_symbol_zone_push(p_program);
+    ast_symbol_zone_push(p_program);
     if (p_type->p_params) {
         p_symbol_sym p_sym = symbol_var_gen("arg1", p_type->p_params->p_item, false, false, NULL);
-        hir_symbol_item_add(p_program, p_sym, false);
+        ast_symbol_item_add(p_program, p_sym, false);
         if (p_type->p_params->p_params) {
             p_sym = symbol_var_gen("arg2", p_type->p_params->p_params->p_item, false, false, NULL);
-            hir_symbol_item_add(p_program, p_sym, false);
+            ast_symbol_item_add(p_program, p_sym, false);
         }
     }
-    hir_symbol_zone_pop(p_program);
+    ast_symbol_zone_pop(p_program);
 }
 
-p_hir_exp syntax_const_check(p_hir_exp p_exp) {
-    assert(p_exp->kind == hir_exp_num);
+p_ast_exp syntax_const_check(p_ast_exp p_exp) {
+    assert(p_exp->kind == ast_exp_num);
     return p_exp;
 }

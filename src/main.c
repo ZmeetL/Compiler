@@ -1,22 +1,21 @@
+#include <ast2ir.h>
 #include <frontend.h>
-#include <hir2mir.h>
 
-#include <hir_print.h>
-#include <mir_print.h>
+#include <ast_print.h>
+#include <ir_print.h>
 
-#include <mir_test.h>
+#include <ir_test.h>
 
-int main(int argc, char *argv[])
-{
-	if (argc == 1)
-		argv[argc++] = NULL;
-	for (int i = 1; i < argc; ++i) {
-		p_hir_program p_hir = frontend_trans(argv[i]);
-		hir_program_print(p_hir);
-		p_mir_program p_mir = hir2mir_program_gen(p_hir);
-		mir_program_print(p_mir);
-		mir_program_test(p_mir);
-		mir_program_drop(p_mir);
-	}
-	return 0;
+int main(int argc, char *argv[]) {
+    if (argc == 1)
+        argv[argc++] = NULL;
+    for (int i = 1; i < argc; ++i) {
+        p_ast_program p_ast = frontend_trans(argv[i]);
+        //ast_program_print(p_ast);
+        p_ir_program p_ir = ast2ir_program_gen(p_ast);
+        ir_program_print(p_ir);
+        ir_program_test(p_ir);
+        ir_program_drop(p_ir);
+    }
+    return 0;
 }
