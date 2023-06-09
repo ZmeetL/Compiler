@@ -4,6 +4,7 @@
 #include <frontend/parser.h>
 
 p_ast_program frontend_trans(const char *file_name) {
+    printf("=== lexical analysis begin ===\n");
     yyscan_t scanner;
     extra_info extra = (extra_info) {
         .fs = NULL,
@@ -16,5 +17,6 @@ p_ast_program frontend_trans(const char *file_name) {
     p_ast_program p_ast = yyget_extra(scanner)->p_ast;
 
     yylex_destroy(scanner);
+    printf("=== lexical analysis end ===\n");
     return p_ast;
 }
