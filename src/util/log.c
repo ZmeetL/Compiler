@@ -5,6 +5,8 @@
 
 static loglevel lowestlevel = info;
 
+int Line = 1;
+
 void set_loglevel(loglevel level) {
     lowestlevel = level;
 }
@@ -37,7 +39,7 @@ int vaLOG(loglevel level, const char *tag, const char *pos, const char *format, 
 
     fprintf(output, "[%s] ", tag);
 
-    if (pos) fprintf(output, "%s ", pos);
+    if (pos) fprintf(output, "%s %d", pos, Line);
 
     fprintf(output, ": ");
 

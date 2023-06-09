@@ -3,6 +3,8 @@
 
 #include <stdarg.h>
 
+int Line;
+
 typedef enum {
     debug,
     info,

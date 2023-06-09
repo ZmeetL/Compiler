@@ -7,9 +7,9 @@
 #include <frontend/parser.h>
 #include <frontend/log.h>
 
-#include <limits.h>
+#include <util/log.h>
 
-int Line_cnt = 0;
+#include <limits.h>
 
 INTCONST_t str2int(const char *text, int base, YYLTYPE *loc, yyscan_t scanner);
 FLOATCONST_t str2float(const char *text, YYLTYPE *loc, yyscan_t scanner);
@@ -91,7 +91,7 @@ STRING (["][^"\n]*["])
 {OR}  {printf("OR ||\n"); return OR;  }
 
 {BLANK}+   { /* empty space */ }
-{NEWLINE}+ { /* empty lines */ Line_cnt = Line_cnt + 1;}
+{NEWLINE}+ { /* empty lines */ Line = Line + 1;}
 
 {INT}      {printf("INT int\n"); return INT;      }
 {FLOAT}    {printf("FLOAT float\n"); return FLOAT;    }
@@ -172,7 +172,7 @@ STRING (["][^"\n]*["])
 ^[ \t]*#[ \t]*endfile { if (frontend_pop_file(yyextra, yyscanner)) yyterminate(); }
 <<EOF>> { if (frontend_pop_file(yyextra, yyscanner)) yyterminate(); }
 
-. {printf("error at line %d: unexpected %s\n", Line_cnt, yytext);};
+. { yyerror(yylloc, yyscanner, "lexical error, unexpected \"%s\"", yytext); };
 %%
 INTCONST_t str2int(const char *text, int base, YYLTYPE *loc, yyscan_t scanner) {
     char *endptr;
