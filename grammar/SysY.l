@@ -76,7 +76,7 @@ STRING (["][^"\n]*["])
 [\[] {printf("LK [\n"); return yytext[0];}
 [\]] {printf("RK ]\n"); return yytext[0];}
 [;] {printf("SEMICN ;\n"); return yytext[0];}
-[<] {printf("LT <>\n"); return yytext[0];}
+[<] {printf("LT <\n"); return yytext[0];}
 [>] {printf("RT >\n"); return yytext[0];}
 [=] {printf("ASSIGN =\n"); return yytext[0];}
 [,] {printf("COMMA ,\n"); return yytext[0];}
