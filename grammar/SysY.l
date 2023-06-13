@@ -31,7 +31,6 @@ LE   (<=)
 GE   (>=)
 EQ   (==)
 NEQ  (!=)
-
 AND  (&&)
 OR   (\|\|)
 
@@ -86,7 +85,6 @@ STRING (["][^"\n]*["])
 {GE}  {printf("GE >=\n"); return GE;  }
 {EQ}  {printf("EQ ==\n"); return EQ;  }
 {NEQ} {printf("NEQ !=\n"); return NEQ; }
-
 {AND} {printf("AND &&\n"); return AND; }
 {OR}  {printf("OR ||\n"); return OR;  }
 
@@ -178,6 +176,35 @@ INTCONST_t str2int(const char *text, int base, YYLTYPE *loc, yyscan_t scanner) {
     char *endptr;
     errno = 0;
     INTCONST_t tmp = strtoll(text, &endptr, base);
+    if(text[0] == '0')
+    {   
+        if(text[1] == 'x' || text[1] == 'X')
+        {
+            for(int i = 2; text[i] != '\0'; ++i)
+            {
+                if((text[i] > 'F' && text[i] <= 'Z')||(text[i] > 'f' && text[i] <= 'z'))
+                {
+                    yyerror(loc, scanner, "lexical error, HEXINTCONST ERROR\"%s\": %m", text);
+                    printf("[Error] [frontend] Line  %d: syntax error, HEXINTCONST ERROR %s\n", Line, text);
+                    tmp = 0;
+                    errno = 0;
+                    return tmp;
+                }
+            }
+        }
+        else 
+        {
+            for(int i = 1; text[i] != '\0'; ++i)
+            if(text[i] > '7') 
+            {
+                yyerror(loc, scanner, "lexical error, OCTINTCONST ERROR\"%s\": %m", text);
+                printf("[Error] [frontend] Line  %d: syntax error, HEXINTCONST ERROR %s\n", Line, text);
+                tmp = 0;
+                errno = 0;
+                return tmp;
+            }
+        }
+    }
     if ((errno == ERANGE && tmp == LLONG_MAX)) {
         yyerror(loc, scanner, "lexical error, integer constant too big\"%s\": %m", text);
         tmp = 0;

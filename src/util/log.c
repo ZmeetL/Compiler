@@ -37,7 +37,7 @@ int vaLOG(loglevel level, const char *tag, const char *pos, const char *format, 
         break;
     }
 
-    fprintf(output, "[%s] ", tag);
+    fprintf(output, "%s ", tag);
 
     if (pos) fprintf(output, "%s %d", pos, Line);
 

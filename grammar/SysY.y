@@ -319,9 +319,7 @@ POPZONE : /* *empty */ { ast_symbol_zone_pop(p_ast); }
 
 CompUnitInit : /* *empty */ {
                      $$ = p_ast;
-                     syntax_rtlib_decl(p_ast, type_int, "getint", NULL, NULL, false);
-                     syntax_rtlib_decl(p_ast, type_int, "getch", NULL, NULL, false);
-                     syntax_rtlib_decl(p_ast, type_float, "getfloat", NULL, NULL, false);
+                     
 
                      p_symbol_type p_type = symbol_type_arrary_gen(0);
                      p_type->p_item = symbol_type_var_gen(type_int);
@@ -344,7 +342,7 @@ CompUnitInit : /* *empty */ {
                      syntax_rtlib_decl(p_ast, type_void, "putf", symbol_type_var_gen(type_str), NULL, true);
 
                      syntax_rtlib_decl(p_ast, type_void, "starttime", NULL, NULL, false);
-                     syntax_rtlib_decl(p_ast, type_void, "stoptime", NULL, NULL, false);
+                
               }
              ;
 %%

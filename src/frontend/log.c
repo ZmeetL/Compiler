@@ -8,6 +8,6 @@ void frontend_log(loglevel level, YYLTYPE *yylloc, yyscan_t yyscanner, const cha
 
     va_list args;
     va_start(args, format);
-    vaLOG(level, "frontend", pos, format, args);
+    vaLOG(level, " ", pos, format, args);
     va_end(args);
 }
